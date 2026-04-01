@@ -23,24 +23,28 @@ def detect_encoding_and_read(filepath):
     raise Exception("Не удалось определить кодировку файла или прочитать его.")
 
 def process_json_file(filepath, json_type, progress_callback=None):
-    from parsers import json_parser_articles, json_parser_points
+    from parsers import json_parser_articles, json_parser_points, json_parser_articles_53fz
     lines = detect_encoding_and_read(filepath)
     file_id = os.path.splitext(os.path.basename(filepath))[0]
     
     parsed_type = None
-    if "1.St" in json_type or "6.FZ" in json_type or "7.FZ" in json_type or "8.St" in json_type or "9.Glava" in json_type:
+    if json_type == "Статьи":
         parsed_type = "articles"
-    elif "2.PP" in json_type or "4.PP" in json_type or "5.PP" in json_type or "10.Plenum" in json_type:
+    elif json_type == "Пункты":
         parsed_type = "points"
+    elif json_type == "Статьи (53-ФЗ)":
+        parsed_type = "articles_53fz"
         
     if not parsed_type:
-        raise Exception("Алгоритмы для работы этого файла пока не прописаны.")
+        raise Exception("Выбран неизвестный тип парсера.")
         
     if progress_callback:
         progress_callback("Анализ и конвертация структуры...")
         
     if parsed_type == "articles":
         result_elements = json_parser_articles.parse_to_json(lines, file_id)
+    elif parsed_type == "articles_53fz":
+        result_elements = json_parser_articles_53fz.parse_to_json(lines, file_id)
     else:
         result_elements = json_parser_points.parse_to_json(lines, file_id)
         
@@ -83,25 +87,16 @@ class JsonParserApp:
         desc_label_json.pack(pady=(0, 20))
 
         # Выпадающий список для JSON
-        # Path to data directory (assuming it's in the parent directory relative to this script)
-        json_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'Conv_to_json')
-        json_files = []
-        if os.path.exists(json_dir):
-            for f in sorted(os.listdir(json_dir)):
-                if f.endswith('.txt'):
-                    json_files.append(f)
-
         self.json_type_var = tk.StringVar()
         self.json_type_combo = ttk.Combobox(
             root, 
             textvariable=self.json_type_var,
-            values=json_files if json_files else ["Нет файлов .txt"],
+            values=["Статьи", "Пункты", "Статьи (53-ФЗ)"],
             state="readonly",
             width=50,
             font=("Arial", 10)
         )
-        if json_files:
-            self.json_type_combo.current(0)
+        self.json_type_combo.current(0)
         self.json_type_combo.pack(pady=(0, 20))
         
         self.btn_json = tk.Button(
@@ -145,10 +140,7 @@ class JsonParserApp:
         messagebox.showerror("Ошибка", f"Произошла ошибка при конвертации:\n{err_msg}")
 
     def select_file_for_json(self):
-        initial_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        conv_dir = os.path.join(initial_dir, 'data', 'Conv_to_json')
-        if os.path.exists(conv_dir):
-            initial_dir = conv_dir
+        initial_dir = os.path.dirname(os.path.abspath(__file__))
             
         filepath = filedialog.askopenfilename(
             initialdir=initial_dir,
