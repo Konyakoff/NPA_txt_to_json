@@ -82,13 +82,27 @@ def parse_to_json(lines, file_id):
                 current_article_text.append(line.rstrip())
             continue
             
-        if not title_finished and stripped.isupper() and stripped != "РОССИЙСКАЯ ФЕДЕРАЦИЯ":
-            if stripped == "ПРИНЯТ" or stripped == "ОДОБРЕН":
+        if not title_finished:
+            if stripped in ["РОССИЙСКАЯ ФЕДЕРАЦИЯ", "ПРАВИТЕЛЬСТВО РОССИЙСКОЙ ФЕДЕРАЦИИ", "ПРИНЯТ", "ОДОБРЕН", "УТВЕРЖДЕНО", "УТВЕРЖДЕНА"]:
                 continue
-            title_lines.append(stripped)
-            continue
-        elif not title_finished and len(title_lines) > 0 and not stripped.isupper():
-            title_finished = True
+            
+            if stripped.startswith("(в ред.") or stripped.startswith("В соответствии со"):
+                title_finished = True
+                continue
+                
+            is_structure = False
+            if stripped.upper().startswith("РАЗДЕЛ ") or stripped.upper().startswith("ГЛАВА "):
+                is_structure = True
+            elif re.match(r'^([IVXLCDM]+)\.\s+', stripped, re.IGNORECASE):
+                is_structure = True
+            elif re.match(r'^([\d\.\-]+)\.(?:\s|$)', stripped):
+                is_structure = True
+                
+            if is_structure:
+                title_finished = True
+            else:
+                title_lines.append(stripped)
+                continue
             
         if stripped.upper().startswith("РАЗДЕЛ "):
             finalize_article()
