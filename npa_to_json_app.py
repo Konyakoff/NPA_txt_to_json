@@ -23,7 +23,7 @@ def detect_encoding_and_read(filepath):
     raise Exception("Не удалось определить кодировку файла или прочитать его.")
 
 def process_json_file(filepath, json_type, progress_callback=None):
-    from parsers import json_parser_articles, json_parser_points, json_parser_articles_53fz
+    from parsers import json_parser_articles, json_parser_points, json_parser_articles_53fz, json_parser_articles_kas
     lines = detect_encoding_and_read(filepath)
     file_id = os.path.splitext(os.path.basename(filepath))[0]
     
@@ -34,6 +34,8 @@ def process_json_file(filepath, json_type, progress_callback=None):
         parsed_type = "points"
     elif json_type == "Статьи (53-ФЗ)":
         parsed_type = "articles_53fz"
+    elif json_type == "Статьи (Кодекс СудПроизводства)":
+        parsed_type = "articles_kas"
         
     if not parsed_type:
         raise Exception("Выбран неизвестный тип парсера.")
@@ -45,6 +47,8 @@ def process_json_file(filepath, json_type, progress_callback=None):
         result_elements = json_parser_articles.parse_to_json(lines, file_id)
     elif parsed_type == "articles_53fz":
         result_elements = json_parser_articles_53fz.parse_to_json(lines, file_id)
+    elif parsed_type == "articles_kas":
+        result_elements = json_parser_articles_kas.parse_to_json(lines, file_id)
     else:
         result_elements = json_parser_points.parse_to_json(lines, file_id)
         
@@ -91,7 +95,7 @@ class JsonParserApp:
         self.json_type_combo = ttk.Combobox(
             root, 
             textvariable=self.json_type_var,
-            values=["Статьи", "Пункты", "Статьи (53-ФЗ)"],
+            values=["Статьи", "Пункты", "Статьи (53-ФЗ)", "Статьи (Кодекс СудПроизводства)"],
             state="readonly",
             width=50,
             font=("Arial", 10)
