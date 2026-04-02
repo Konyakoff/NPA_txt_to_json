@@ -23,7 +23,7 @@ def detect_encoding_and_read(filepath):
     raise Exception("Не удалось определить кодировку файла или прочитать его.")
 
 def process_json_file(filepath, json_type, progress_callback=None):
-    from parsers import json_parser_articles, json_parser_points, json_parser_articles_53fz, json_parser_articles_kas, json_parser_points_pp565
+    from parsers import json_parser_articles, json_parser_points, json_parser_articles_53fz, json_parser_articles_kas, json_parser_points_pp565, json_parser_points_pp663
     lines = detect_encoding_and_read(filepath)
     file_id = os.path.splitext(os.path.basename(filepath))[0]
     
@@ -38,6 +38,8 @@ def process_json_file(filepath, json_type, progress_callback=None):
         parsed_type = "articles_kas"
     elif json_type == "пункты (PP565 + другие)":
         parsed_type = "points_pp565"
+    elif json_type == "Пункты (PP663 О Призыве)":
+        parsed_type = "points_pp663"
         
     if not parsed_type:
         raise Exception("Выбран неизвестный тип парсера.")
@@ -53,6 +55,8 @@ def process_json_file(filepath, json_type, progress_callback=None):
         result_elements = json_parser_articles_kas.parse_to_json(lines, file_id)
     elif parsed_type == "points_pp565":
         result_elements = json_parser_points_pp565.parse_to_json(lines, file_id)
+    elif parsed_type == "points_pp663":
+        result_elements = json_parser_points_pp663.parse_to_json(lines, file_id)
     else:
         result_elements = json_parser_points.parse_to_json(lines, file_id)
         
@@ -99,7 +103,7 @@ class JsonParserApp:
         self.json_type_combo = ttk.Combobox(
             root, 
             textvariable=self.json_type_var,
-            values=["Статьи", "Пункты", "Статьи (53-ФЗ)", "Статьи (Кодекс СудПроизводства)", "пункты (PP565 + другие)"],
+            values=["Статьи", "Пункты", "Статьи (53-ФЗ)", "Статьи (Кодекс СудПроизводства)", "пункты (PP565 + другие)", "Пункты (PP663 О Призыве)"],
             state="readonly",
             width=50,
             font=("Arial", 10)
