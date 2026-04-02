@@ -1,7 +1,7 @@
 import re
 
 def clean_header(line):
-    line = re.sub(r'\s*\(в ред\..*?\)\s*$', '', line)
+    line = re.sub(r'\s*\(в ред\.(?:[^()]*|\([^()]*\))*\)', '', line)
     line = re.sub(r'\s*\(в ред\..*$', '', line)
     return line.strip()
 
@@ -46,8 +46,9 @@ def parse_to_json(lines, file_id):
         if current_article_num:
             text_val = "\n".join(current_article_text).strip()
             
-            # Убираем вставки вида (в ред. Федерального закона от ...) из текста статьи и ее названия
-            text_val = re.sub(r'[ \t]*\(в ред\.[^\)]*\)', '', text_val)
+            # Убираем вставки вида (в ред. Федерального закона от ...) из текста статьи и ее названия,
+            # поддерживая один уровень вложенных скобок (например, "(ред. от ...)")
+            text_val = re.sub(r'[ \t]*\(в ред\.(?:[^()]*|\([^()]*\))*\)', '', text_val)
             
             legal_act = " ".join(title_lines).strip() if title_lines else None
             
