@@ -168,7 +168,7 @@ def parse_to_json(lines, file_id):
                 state = "WAIT_SUBSEC"
                 continue
                 
-            if stripped == "Статья расписания болезней":
+            if stripped.startswith("Статья расписания болезней") or stripped.startswith("Наименование болезней"):
                 if state in ["ART_TEXT", "ART_WAIT_SUBPOINT", "ART_WAIT_SUBPOINT_OR_TEXT", "ART_GRAFA_WAIT"]:
                     finalize_article()
                 art_num = None
@@ -180,8 +180,21 @@ def parse_to_json(lines, file_id):
                 continue
                 
             if state == "ART_TABLE_HEADER":
-                if stripped == "III графа":
+                if stripped.startswith("III графа"):
+                    # Check if number is merged
+                    if len(stripped) > 9:
+                        num_part = stripped[9:]
+                        if re.match(r'^\d+$', num_part):
+                            art_num = num_part
+                            state = "ART_TITLE"
+                            continue
                     state = "ART_NUM"
+                elif re.match(r'^\d+$', stripped) and ' ' not in stripped:
+                    # Sometimes "III графа" is missing or split strangely, and we just see the number
+                    art_num = stripped
+                    state = "ART_TITLE"
+                elif re.match(r'^[I]{1,3}\s+графа', stripped):
+                    pass # Ignore other headers and wait for III графа
                 continue
                 
             if state == "ART_NUM":
@@ -235,18 +248,35 @@ def parse_to_json(lines, file_id):
                         state = "ART_TEXT"
                 continue
                     
-            if state == "ART_WAIT_SUBPOINT_OR_TEXT":
+            if state == "ART_TEXT" or state == "ART_WAIT_SUBPOINT_OR_TEXT":
                 if stripped.startswith('(в ред.'): continue
-                if re.match(r'^[а-я]\)', stripped):
+                if re.match(r'^[а-я]\)', stripped) and state == "ART_WAIT_SUBPOINT_OR_TEXT":
                     current_subpoint_text = [stripped]
                     state = "ART_SUBPOINT_WAIT_GRAFA1"
-                else:
-                    art_text_below.append(stripped)
-                    state = "ART_TEXT"
-                continue
+                    continue
+                if re.match(r'^\d+$', stripped) and ' ' not in stripped:
+                    finalize_article()
+                    art_num = stripped
+                    art_title = None
+                    subpoints_data = []
+                    current_subpoint_text = []
+                    art_text_below = []
+                    state = "ART_TITLE"
+                    continue
                 
-            if state == "ART_TEXT":
+                if stripped in ["Наименование болезней", "Наименование болезней, степень нарушения функции", "Категория годности к военной службе", "Статья расписания болезней"]:
+                    continue
+                if stripped == "степень нарушения функции":
+                    continue
+                
+                # Check for merged header artifacts like "I графа", "II графа", "III графа"
+                if re.match(r'^[I]{1,3}\s+графа', stripped):
+                    continue
+                if re.match(r'^графа', stripped):
+                    continue
+                    
                 art_text_below.append(stripped)
+                state = "ART_TEXT"
                 continue
 
     if state in ["GEN_PROV"]:

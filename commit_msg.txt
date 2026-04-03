@@ -1,0 +1,7 @@
+Add DOCX parsing support for PP565 Raspisanie Bolezney
+
+- Add docx-based parser for PP565 to correctly handle complex table structures and merged articles (e.g., articles 37 and 38).
+- Remove editorial notes '(в ред. ...)' from categories of fitness.
+- Clean up extra punctuation (colons) before 'Графа I'.
+- Update UI to toggle docx mode and filter suitable files.
+- Refactor data folder structure.
